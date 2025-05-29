@@ -22,7 +22,7 @@ app.get('/get_ip', (req, res) => {
 });
 
 app.post('/print', (req, res) => {
-  const { content } = req.body;
+  const { content, boleto } = req.body;
   if (!content) return res.status(400).json({ error: 'No content provided' });
 
   function appendBytes(arr1, arr2) {
@@ -32,14 +32,29 @@ app.post('/print', (req, res) => {
     return merged;
   }
 
-  function stringToEscPos(text) {
+  function stringToEscPos(content, boleto) {
     const encoder = new TextEncoder();
     let escPos = new Uint8Array(0);
 
-    escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Initialize printer
-    escPos = appendBytes(escPos, encoder.encode(text));
-    escPos = appendBytes(escPos, encoder.encode('\n\n\n\n'));
-    escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x1D, 0x56, 0x00])); // Feed and cut
+    function feedAndCut() {
+      let seq = new Uint8Array(0);
+      seq = appendBytes(seq, encoder.encode('\n\n\n\n')); // Alimentar papel
+      seq = appendBytes(seq, new Uint8Array([0x1D, 0x56, 0x00])); // Corte
+      return seq;
+    }
+
+    escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Inicializar impresora
+    escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alinear a la izquierda
+
+    // 1. Imprimir voucher (content)
+    escPos = appendBytes(escPos, encoder.encode(content));
+    // 2. Saltos + corte
+    escPos = appendBytes(escPos, feedAndCut());
+
+    // 3. Imprimir boleto
+    escPos = appendBytes(escPos, encoder.encode(boleto));
+    // 4. Saltos + corte final
+    escPos = appendBytes(escPos, feedAndCut());
 
     return escPos;
   }
@@ -53,7 +68,7 @@ app.post('/print', (req, res) => {
   }
 
   try {
-    const escPosData = stringToEscPos(content);
+    const escPosData = stringToEscPos(content, boleto);
     const base64 = uint8ToBase64(escPosData);
     res.json({ rawbt: `rawbt:base64,${base64}` });
   } catch (err) {
