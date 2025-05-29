@@ -23,7 +23,9 @@ app.get('/get_ip', (req, res) => {
 
 app.post('/print', (req, res) => {
   const { content, boleto } = req.body;
-  if (!content) return res.status(400).json({ error: 'No content provided' });
+  if (!content && !boleto) {
+    return res.status(400).json({ error: 'No hay datos proporcionados' });
+  }
 
   function appendBytes(arr1, arr2) {
     const merged = new Uint8Array(arr1.length + arr2.length);
@@ -38,23 +40,30 @@ app.post('/print', (req, res) => {
 
     function feedAndCut() {
       let seq = new Uint8Array(0);
-      seq = appendBytes(seq, encoder.encode('\n\n\n\n')); // Alimentar papel
-      seq = appendBytes(seq, new Uint8Array([0x1D, 0x56, 0x00])); // Corte
+      seq = appendBytes(seq, encoder.encode('\n\n\n\n')); // Saltos de línea
+      seq = appendBytes(seq, new Uint8Array([0x1D, 0x56, 0x00])); // Comando de corte
       return seq;
     }
 
     escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Inicializar impresora
     escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alinear a la izquierda
 
-    // 1. Imprimir voucher (content)
-    escPos = appendBytes(escPos, encoder.encode(content));
-    // 2. Saltos + corte
-    escPos = appendBytes(escPos, feedAndCut());
+    if (content && boleto) {
+      // Imprimir ambos
+      escPos = appendBytes(escPos, encoder.encode(content));
+      escPos = appendBytes(escPos, feedAndCut());
 
-    // 3. Imprimir boleto
-    escPos = appendBytes(escPos, encoder.encode(boleto));
-    // 4. Saltos + corte final
-    escPos = appendBytes(escPos, feedAndCut());
+      escPos = appendBytes(escPos, encoder.encode(boleto));
+      escPos = appendBytes(escPos, feedAndCut());
+    } else if (boleto) {
+      // Solo reimpresión de boleto
+      escPos = appendBytes(escPos, encoder.encode(boleto));
+      escPos = appendBytes(escPos, feedAndCut());
+    } else if (content) {
+      // Solo voucher
+      escPos = appendBytes(escPos, encoder.encode(content));
+      escPos = appendBytes(escPos, feedAndCut());
+    }
 
     return escPos;
   }
