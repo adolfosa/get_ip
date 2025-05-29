@@ -1,5 +1,5 @@
 # get_ip
-Pequeño backend para exponer ip de totem android y habilitar impresión desde frontend en la web
+Pequeño backend hecho con Node.js para exponer ip de totem android y habilitar impresión desde frontend en la web
 
 Se debe instalar Termux version 1001 para el android 10
 
