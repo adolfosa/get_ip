@@ -52,4 +52,41 @@ Para que el frontend consuma la API /print del servidor, debe realizar una petic
                 console.error('Error al enviar a imprimir:', error);
                 });
 
+Tecnologías y módulos usados:
+
+1. Node.js
+Permite construir el servidor web
+
+2. Express
+Simplifica el manejo de rutas, peticiones y middleware.
+
+3. HTTPS
+Usa el módulo nativo https para crear un servidor con certificado SSL, lo que permite comunicación cifrada.
+Se configura con:
+    key: fs.readFileSync('./key.pem'),
+    cert: fs.readFileSync('./cert.pem')
+
+4. CORS
+El middleware cors permite aceptar peticiones desde otros orígenes, como un frontend en otra IP o puerto.
+
+5. File System (fs)
+Permite leer los certificados SSL (key.pem, cert.pem) directamente.
+
+6. Path
+El módulo path ayuda a construir rutas de archivos de forma segura (compatible con Windows, Linux, etc.).
+
+7. TextEncoder / Uint8Array
+Son APIs del entorno JavaScript (Web / Node >= 11). Se usan para convertir texto a bytes (TextEncoder) y manipular los datos binarios (Uint8Array), necesarios para generar comandos ESC/POS.
+
+8. Formato ESC/POS
+Este es el estándar de comandos binarios usado por muchas impresoras térmicas. Se generan manualmente secuencias de control como:    
+    0x1B 0x40 → Inicializar impresora
+    
+    0x1D 0x56 0x00 → Cortar papel
+    
+    0x1B 0x61 0x00 → Alinear texto a la izquierda
+
+9. Base64 + RawBT
+El servidor convierte el buffer ESC/POS a base64, lo que permite usarlo con apps como RawBT a través de este esquema de URL: { "rawbt": "rawbt:base64,..." }
+En el frontend se puede redirigir a window.location.href = data.rawbt para que se abra directamente la app de impresión.
     
