@@ -3,119 +3,72 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const os = require('os');
+const path = require('path'); // Añadir esto
 const app = express();
 const PORT = 3000;
 
-// Middlewares básicos
-app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+// Middlewares
+app.use(cors()); // habilita CORS para cualquier origen
+app.use(express.json());
+app.use(express.static('public')); // Sirve archivos estáticos desde la carpeta 'public'
 
-// Endpoint para verificar conexión
-app.get('/ping', (req, res) => {
-    res.json({ status: 'active', service: 'rawbt-printer' });
+// Ruta principal que sirve el index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Endpoint principal de impresión
+app.get('/get_ip', (req, res) => {
+  res.json({ ip: '192.168.88.232' });
+});
+
 app.post('/print', (req, res) => {
-    try {
-        const { content, options } = req.body;
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'No content provided' });
 
-        // Validación mínima
-        if (!content) {
-            return res.status(400).json({ error: "El contenido a imprimir es requerido" });
-        }
+  function appendBytes(arr1, arr2) {
+    const merged = new Uint8Array(arr1.length + arr2.length);
+    merged.set(arr1);
+    merged.set(arr2, arr1.length);
+    return merged;
+  }
 
-        // Generar comando ESC/POS basado en el contenido
-        const escPosData = generateEscPos(content, options || {});
+  function stringToEscPos(text) {
+    const encoder = new TextEncoder();
+    let escPos = new Uint8Array(0);
 
-        // Convertir a formato RawBT
-        const rawbtUrl = `rawbt:base64,${escPosData.toString('base64')}`;
-
-        res.json({
-            success: true,
-            rawbt_url: rawbtUrl,
-            content_length: content.length
-        });
-
-    } catch (error) {
-        console.error("Error en /print:", error);
-        res.status(500).json({ error: "Error al procesar la solicitud de impresión" });
-    }
-});
-
-// Función genérica para generar ESC/POS
-function generateEscPos(content, options) {
-    // Configuración por defecto
-    const config = {
-        encoding: 'utf8',
-        cut: true,
-        linesAfter: 3,
-        ...options
-    };
-
-    let escPos = Buffer.from([]);
-
-    // Comandos iniciales (reset, alineación izquierda)
-    escPos = Buffer.concat([escPos, Buffer.from([0x1B, 0x40])]); // Reset
-    escPos = Buffer.concat([escPos, Buffer.from([0x1B, 0x61, 0x00])]); // Alineación izquierda
-
-    // Agregar contenido principal
-    escPos = Buffer.concat([escPos, Buffer.from(content, config.encoding)]);
-
-    // Agregar líneas finales y corte
-    if (config.linesAfter > 0) {
-        escPos = Buffer.concat([escPos, Buffer.from('\n'.repeat(config.linesAfter))]);
-    }
-    if (config.cut) {
-        escPos = Buffer.concat([escPos, Buffer.from([0x1D, 0x56, 0x00])]); // Corte completo
-    }
+    escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Initialize printer
+    escPos = appendBytes(escPos, encoder.encode(text));
+    escPos = appendBytes(escPos, encoder.encode('\n\n\n\n'));
+    escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x1D, 0x56, 0x00])); // Feed and cut
 
     return escPos;
-}
+  }
 
-// Obtener información del servidor
-app.get('/server/info', (req, res) => {
-    const interfaces = os.networkInterfaces();
-    const addresses = [];
-
-    for (const interfaceName in interfaces) {
-        for (const iface of interfaces[interfaceName]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                addresses.push(iface.address);
-            }
-        }
+  function uint8ToBase64(uint8arr) {
+    let binary = '';
+    for (let i = 0; i < uint8arr.length; i++) {
+      binary += String.fromCharCode(uint8arr[i]);
     }
+    return Buffer.from(binary, 'binary').toString('base64');
+  }
 
-    res.json({
-        service: 'rawbt-print-server',
-        version: '1.0',
-        available_ips: addresses,
-        port: PORT,
-        endpoints: {
-            print: 'POST /print',
-            info: 'GET /server/info',
-            health: 'GET /ping'
-        }
-    });
+  try {
+    const escPosData = stringToEscPos(content);
+    const base64 = uint8ToBase64(escPosData);
+    res.json({ rawbt: `rawbt:base64,${base64}` });
+  } catch (err) {
+    console.error('Error generating ESC/POS from text:', err);
+    res.status(500).json({ error: 'Failed to convert text to print command' });
+  }
 });
 
-// Configuración HTTPS
+// Opciones SSL
 const sslOptions = {
-    key: fs.readFileSync('./key.pem'),
-    cert: fs.readFileSync('./cert.pem'),
+  key: fs.readFileSync('./key.pem'),
+  cert: fs.readFileSync('./cert.pem'),
 };
 
-// Iniciar servidor
+// Iniciar servidor HTTPS
 https.createServer(sslOptions, app).listen(PORT, () => {
-    console.log(`RAWBT Print Server running on port ${PORT}`);
-    console.log('Available network interfaces:');
-    
-    const interfaces = os.networkInterfaces();
-    for (const interfaceName in interfaces) {
-        for (const iface of interfaces[interfaceName]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                console.log(`- https://${iface.address}:${PORT}`);
-            }
-        }
-    }
+  console.log(` \~E API escuchando en localhost`);
 });
