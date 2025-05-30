@@ -24,7 +24,7 @@ app.get('/get_ip', (req, res) => {
 });
 
 app.post('/print', (req, res) => {
-  const { content, boleto } = req.body;
+  const { content, boleto } = req.body;  
   if (!content && !boleto) {
     return res.status(400).json({ error: 'No hay datos proporcionados' });
   }
@@ -62,15 +62,27 @@ app.post('/print', (req, res) => {
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // izquierda
       escPos = appendBytes(escPos, encoder.encode(boleto));
       escPos = appendBytes(escPos, feedAndCut());
-    } else if (boleto) {
-      // Solo boleto con logo
+    }        
+    else if (boleto) {
+      
+      const firstLine = boleto.split('\n')[0] || '---------';
+
+      // Forzar buffer con primera línea real (invisible para usuario si es genérica)
+      escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // inicializa
+      escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // centrar
+      escPos = appendBytes(escPos, encoder.encode(firstLine + '\n'));
+      escPos = appendBytes(escPos, feedAndCut());
+
+      // Ahora impresión real
+      escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // reinicia impresora
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // centrar
       escPos = appendBytes(escPos, logoData);
-      escPos = appendBytes(escPos, encoder.encode('\n\n'));
+      escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A]));
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // izquierda
       escPos = appendBytes(escPos, encoder.encode(boleto));
       escPos = appendBytes(escPos, feedAndCut());
-    } else if (content) {
+    } 
+    else if (content) {
       // Solo voucher, sin logo
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // izquierda
       escPos = appendBytes(escPos, encoder.encode(content));
