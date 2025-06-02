@@ -85,24 +85,19 @@ function generatePrintCommand(content, boleto) {
 function printTestPage() {
   const testContent = "Impresora lista\nServidor activo\n\n";
   const base64Data = generatePrintCommand(testContent, null);
-  
-  // URL con parámetros para ocultar/cerrar RawBT automáticamente
-  const printUrl = `rawbt:base64,${base64Data}?closeOnFinish=1&dontShowUI=1`;
-  
-  console.log("Enviando impresión de prueba a RawBT...");
-  console.log("URL generada:", printUrl); // Para depuración
+  const printUrl = `rawbt:base64,${base64Data}`;
 
+  console.log("Enviando impresión de prueba a RawBT...");
+  
   const { exec } = require('child_process');
-  
-  // Comando para Termux con timeout de 10 segundos
-  const termuxCommand = `am start --user 0 -a android.intent.action.VIEW -d "${printUrl}"`;
-  
-  exec(termuxCommand, { timeout: 10000 }, (error, stdout, stderr) => {
+  exec(`termux-open-url "${printUrl}"`, (error) => {
     if (error) {
-      console.error("❌ Error al enviar a RawBT:", error.message);
-      
+      console.error("Error al enviar a RawBT:", error.message);
+      console.error("Asegúrate de:");
+      console.error("1. Tener RawBT instalado en Android");
+      console.error("2. Haber dado permisos a Termux para abrir enlaces");
     } else {
-      console.log("✅ Comando enviado.");      
+      console.log("¡Comando de impresión enviado correctamente!");
     }
   });
 }
