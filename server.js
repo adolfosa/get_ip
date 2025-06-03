@@ -83,22 +83,25 @@ function generatePrintCommand(content, boleto) {
 }
 
 function printTestPage() {
-  const testContent = "Impresora lista\nServidor activo\n\n";
+  const testContent = "TEST INICIAL\nServidor activo\n\n";
   const base64Data = generatePrintCommand(testContent, null);
-  const printUrl = `rawbt:base64,${base64Data}`;
+  const printUrl = `rawbt:base64,${base64Data}?closeOnFinish=1&dontShowUI=1&ignorePermErrors=1`;
 
-  console.log("Enviando impresión de prueba a RawBT...");
-  
   const { exec } = require('child_process');
-  exec(`termux-open-url "${printUrl}"`, (error) => {
-    if (error) {
-      console.error("Error al enviar a RawBT:", error.message);
-      console.error("Asegúrate de:");
-      console.error("1. Tener RawBT instalado en Android");
-      console.error("2. Haber dado permisos a Termux para abrir enlaces");
-    } else {
-      console.log("¡Comando de impresión enviado correctamente!");
-    }
+
+  // 1. Precalentamiento de RawBT (abrir y cerrar antes de imprimir)
+  exec(`am start -n ru.a402d.rawbtprinter/.MainActivity && sleep 2 && am force-stop ru.a402d.rawbtprinter`, () => {
+    
+    // 2. Espera 1 segundo y envía la impresión real
+    setTimeout(() => {
+      exec(`termux-open-url "${printUrl}"`, { timeout: 3000 }, () => {
+        
+        // 3. Cierre forzoso como respaldo
+        setTimeout(() => {
+          exec(`am force-stop ru.a402d.rawbtprinter`);
+        }, 2000);
+      });
+    }, 1000);
   });
 }
 
