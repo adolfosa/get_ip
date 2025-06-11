@@ -82,27 +82,66 @@ function generatePrintCommand(content, boleto) {
   return uint8ToBase64(escPosData);
 }
 
-function printTestPage() {
-  const testContent = "TEST INICIAL\nServidor activo\n\n";
-  const base64Data = generatePrintCommand(testContent, null);
-  const printUrl = `rawbt:base64,${base64Data}?closeOnFinish=1&dontShowUI=1&ignorePermErrors=1`;
-
+function forceCloseRawBT() {
   const { exec } = require('child_process');
+  console.log('[RAWBT] Ejecutando secuencia de cierre agresivo');
+  
+  // Secuencia mejorada de cierre
+  const commands = [
+    'am force-stop ru.a402d.rawbtprinter',
+    'input keyevent KEYCODE_HOME',  // Minimiza cualquier app
+    'service call activity 79 s16 com.android.systemui',  // Mostrar sistema
+    'pkill -f ru.a402d.rawbtprinter',
+    'am kill ru.a402d.rawbtprinter'
+  ];
 
-  // 1. Precalentamiento de RawBT (abrir y cerrar antes de imprimir)
-  exec(`am start -n ru.a402d.rawbtprinter/.MainActivity && sleep 2 && am force-stop ru.a402d.rawbtprinter`, () => {
-    
-    // 2. Espera 1 segundo y envía la impresión real
+  commands.forEach((cmd, i) => {
     setTimeout(() => {
-      exec(`termux-open-url "${printUrl}"`, { timeout: 3000 }, () => {
-        
-        // 3. Cierre forzoso como respaldo
-        setTimeout(() => {
-          exec(`am force-stop ru.a402d.rawbtprinter`);
-        }, 2000);
+      exec(cmd, (error) => {
+        if (error) console.log(`[RAWBT] Error en comando ${i}:`, error);
       });
-    }, 1000);
+    }, i * 800);
   });
+}
+
+function printTestPage() {
+  const { exec } = require('child_process');
+  console.log('[RAWBT] Iniciando proceso de preparación');
+
+  // 1. Limpieza inicial
+  forceCloseRawBT();
+
+  // 2. Esperar y abrir RawBT
+  setTimeout(() => {
+    exec('am start -n ru.a402d.rawbtprinter/.MainActivity', () => {
+      console.log('[RAWBT] Aplicación abierta, preparando impresión');
+
+      // 3. Configurar impresión de prueba
+      setTimeout(() => {
+        const testContent = "TEST INICIAL\nServidor activo\n\n";
+        const base64Data = generatePrintCommand(testContent, null);
+        const printUrl = `rawbt:base64,${base64Data}?closeOnFinish=0&dontShowUI=0`;
+        
+        // 4. Enviar impresión (sin esperar respuesta)
+        exec(`termux-open-url "${printUrl}"`, { timeout: 1000 }, () => {});
+
+        // 5. Cierre forzado en cascada
+        setTimeout(() => {
+          forceCloseRawBT();
+          
+          // 6. Verificación final
+          setTimeout(() => {
+            exec('ps | grep ru.a402d.rawbtprinter', (_, stdout) => {
+              if (stdout.includes('ru.a402d.rawbtprinter')) {
+                console.log('[RAWBT] Aplicación persistente, usando método nuclear');
+                exec('am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d package:ru.a402d.rawbtprinter');
+              }
+            });
+          }, 5000);
+        }, 3000);
+      }, 4000);
+    });
+  }, 2000);
 }
 
 // Ruta principal
@@ -138,6 +177,15 @@ const sslOptions = {
 // Iniciar servidor HTTPS
 const server = https.createServer(sslOptions, app).listen(PORT, () => {
   console.log(` \~E API escuchando en localhost`);
+  
   // Ejecutar impresión de prueba después de iniciar el servidor
-  setTimeout(printTestPage, 2000); // Esperar 2 segundos para asegurar que el servidor esté listo
+  setTimeout(() => {
+    printTestPage();
+    
+    // Segundo intento de limpieza después de 5 segundos por si acaso
+    setTimeout(() => {
+      const { exec } = require('child_process');
+      exec(`am force-stop ru.a402d.rawbtprinter`);
+    }, 5000);
+  }, 2000);
 });
