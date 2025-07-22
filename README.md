@@ -27,6 +27,8 @@ En el home de Termux se debe configurar el archivo bashrc:
 
 Una vez corriendo el servidor, en el buscador del totem se debe acceder a la url https://localhost:3000/index.html y se debe marcar como conexión segura
 
+Link para probar impresora: https://test-imp-totem2.netlify.app/
+
 Para que el frontend consuma la API /print del servidor, debe realizar una petición POST al endpoint https://localhost:3000/print (o a la IP correspondiente), enviando en el cuerpo de la solicitud los campos content y/o boleto.
 
     Ejemplo:
