@@ -19,6 +19,10 @@ Generar certificado SSL
     -keyout key.pem -out cert.pem -days 36500 \
     -subj "/CN=localhost"
 
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+    -keyout key.pem -out cert.pem -subj "/CN=10.5.20.100" \
+    -addext "subjectAltName=IP:10.5.20.100,DNS:localhost"
+
 Dar permisos 
     chmod +x ~/get_ip/start-server.sh
 
