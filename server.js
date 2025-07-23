@@ -8,13 +8,21 @@ const PORT = 3000;
 const { logoData } = require('./logo.js');
 
 // Middlewares
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://totem-costa2.netlify.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 // CORS primero
-const corsOptions = {
-  origin: 'https://totem-costa2.netlify.app',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  credentials: true
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: 'https://totem-costa2.netlify.app',
+//   methods: ['GET', 'POST', 'OPTIONS'],
+//   credentials: true
+// };
+// app.use(cors(corsOptions));
 
 // Luego el resto de los middlewares
 app.use(express.json());
@@ -30,7 +38,7 @@ app.get('/get_ip', (req, res) => {
 });
 
 app.post('/print', (req, res) => {
-  const { content, boleto } = req.body;  
+  const { content, boleto } = req.body;
   if (!content && !boleto) {
     return res.status(400).json({ error: 'No hay datos proporcionados' });
   }
@@ -77,7 +85,7 @@ function generatePrintCommand(content, boleto) {
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
       escPos = appendBytes(escPos, encoder.encode(boleto));
       escPos = appendBytes(escPos, feedAndCut());
-    }        
+    }
     else if (boleto) {
       const firstLine = boleto.split('\n')[0] || '---------';
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
@@ -92,7 +100,7 @@ function generatePrintCommand(content, boleto) {
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
       escPos = appendBytes(escPos, encoder.encode(boleto));
       escPos = appendBytes(escPos, feedAndCut());
-    } 
+    }
     else if (content) {
       escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
       escPos = appendBytes(escPos, encoder.encode(content));
@@ -117,7 +125,7 @@ function generatePrintCommand(content, boleto) {
 function forceCloseRawBT() {
   const { exec } = require('child_process');
   console.log('[RAWBT] Ejecutando secuencia de cierre agresivo');
-  
+
   // Secuencia mejorada de cierre
   const commands = [
     'am force-stop ru.a402d.rawbtprinter',
@@ -153,14 +161,14 @@ function printTestPage() {
         const testContent = "TEST INICIAL\nServidor activo\n\n";
         const base64Data = generatePrintCommand(testContent, null);
         const printUrl = `rawbt:base64,${base64Data}?closeOnFinish=0&dontShowUI=0`;
-        
+
         // 4. Enviar impresión (sin esperar respuesta)
-        exec(`termux-open-url "${printUrl}"`, { timeout: 1000 }, () => {});
+        exec(`termux-open-url "${printUrl}"`, { timeout: 1000 }, () => { });
 
         // 5. Cierre forzado en cascada
         setTimeout(() => {
           forceCloseRawBT();
-          
+
           // 6. Verificación final
           setTimeout(() => {
             exec('ps | grep ru.a402d.rawbtprinter', (_, stdout) => {
@@ -185,11 +193,11 @@ const sslOptions = {
 // Iniciar servidor HTTPS
 const server = https.createServer(sslOptions, app).listen(PORT, () => {
   console.log(` \~E API escuchando en localhost`);
-  
+
   // Ejecutar impresión de prueba después de iniciar el servidor
   setTimeout(() => {
     printTestPage();
-    
+
     // Segundo intento de limpieza después de 5 segundos por si acaso
     setTimeout(() => {
       const { exec } = require('child_process');

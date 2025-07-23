@@ -15,6 +15,10 @@ Generar certificado SSL
 
     openssl req -new -x509 -key key.pem -out cert.pem -days 36500
 
+    openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout key.pem -out cert.pem -days 36500 \
+    -subj "/CN=localhost"
+
 Dar permisos 
     chmod +x ~/get_ip/start-server.sh
 
