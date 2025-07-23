@@ -8,15 +8,17 @@ const PORT = 3000;
 const { logoData } = require('./logo.js');
 
 // Middlewares
-app.use(express.json());
-app.use(express.static('public'));
-
+// CORS primero
 const corsOptions = {
   origin: 'https://totem-costa2.netlify.app',
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true
 };
-
 app.use(cors(corsOptions));
+
+// Luego el resto de los middlewares
+app.use(express.json());
+app.use(express.static('public'));
 
 // Ruta principal
 app.get('/', (req, res) => {
