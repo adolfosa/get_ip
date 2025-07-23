@@ -29,6 +29,8 @@ Una vez corriendo el servidor, en el buscador del totem se debe acceder a la url
 
 Link para probar impresora: https://test-imp-totem2.netlify.app/
 
+Desactivar Launcher3 con ADB: adb shell pm disable-user --user 0 com.android.launcher3
+
 Para que el frontend consuma la API /print del servidor, debe realizar una petición POST al endpoint https://localhost:3000/print (o a la IP correspondiente), enviando en el cuerpo de la solicitud los campos content y/o boleto.
 
     Ejemplo:
