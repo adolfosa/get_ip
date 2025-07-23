@@ -8,7 +8,12 @@ const PORT = 3000;
 const { logoData } = require('./logo.js');
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'https://totem-costa2.netlify.app',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -150,10 +155,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/get_ip', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://totem-costa2.netlify.app');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
   res.json({ ip: '192.168.88.232' });
 });
 
 app.post('/print', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://totem-costa2.netlify.app');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
   const { content, boleto } = req.body;  
   if (!content && !boleto) {
     return res.status(400).json({ error: 'No hay datos proporcionados' });
@@ -167,6 +182,7 @@ app.post('/print', (req, res) => {
     res.status(500).json({ error: 'Failed to convert text to print command' });
   }
 });
+
 
 // Opciones SSL
 const sslOptions = {
