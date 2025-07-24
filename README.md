@@ -9,19 +9,16 @@ Instalar node.js
 
     pkg install nodejs
 
+Clonar repositorio con la rama correcta para Android 7
+
+    git clone --branch android7 https://github.com/adolfosa/get_ip.git
+
 Generar certificado SSL
 
     openssl genrsa -out key.pem 2048
 
     openssl req -new -x509 -key key.pem -out cert.pem -days 36500
-
-    openssl req -x509 -newkey rsa:2048 -nodes \
-    -keyout key.pem -out cert.pem -days 36500 \
-    -subj "/CN=localhost"
-
-    openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
-    -keyout key.pem -out cert.pem -subj "/CN=10.5.20.100" \
-    -addext "subjectAltName=IP:10.5.20.100,DNS:localhost"
+    
 
 Dar permisos 
     chmod +x ~/get_ip/start-server.sh
@@ -39,7 +36,6 @@ Link para probar impresora: https://test-imp-totem2.netlify.app/
 
 Desactivar Launcher3 con ADB: adb shell pm disable-user --user 0 com.android.launcher3
 
-git clone --branch android7 https://github.com/adolfosa/get_ip.git
 
 Para que el frontend consuma la API /print del servidor, debe realizar una petición POST al endpoint https://localhost:3000/print (o a la IP correspondiente), enviando en el cuerpo de la solicitud los campos content y/o boleto.
 
