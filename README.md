@@ -99,4 +99,8 @@ Este es el estándar de comandos binarios usado por muchas impresoras térmicas.
 9. Base64 + RawBT
 El servidor convierte el buffer ESC/POS a base64, lo que permite usarlo con apps como RawBT a través de este esquema de URL: { "rawbt": "rawbt:base64,..." }
 En el frontend se puede redirigir a window.location.href = data.rawbt para que se abra directamente la app de impresión.
-    
+
+
+conceder permiso a anydesk
+pm grant com.anydesk.anydesk android.permission.SYSTEM_ALERT_WINDOW
+pm grant com.anydesk.anydesk android.permission.FOREGROUND_SERVICE
