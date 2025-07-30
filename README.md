@@ -101,6 +101,11 @@ El servidor convierte el buffer ESC/POS a base64, lo que permite usarlo con apps
 En el frontend se puede redirigir a window.location.href = data.rawbt para que se abra directamente la app de impresión.
 
 
-conceder permiso a anydesk
+conceder permiso a anydesk.
+
 pm grant com.anydesk.anydesk android.permission.SYSTEM_ALERT_WINDOW
 pm grant com.anydesk.anydesk android.permission.FOREGROUND_SERVICE
+
+-
+
+appops set com.anydesk.anydesk PROJECT_MEDIA allow
