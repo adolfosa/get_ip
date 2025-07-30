@@ -108,4 +108,5 @@ pm grant com.anydesk.anydesk android.permission.FOREGROUND_SERVICE
 
 -
 
-appops set com.anydesk.anydesk PROJECT_MEDIA allow
+su
+appops set anydesk.anydeskandroid PROJECT_MEDIA allow
