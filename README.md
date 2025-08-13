@@ -96,4 +96,22 @@ En el frontend se puede redirigir a window.location.href = data.rawbt para que s
 
 cmd package install-existing com.android.launcher3
 pm enable --user 0 com.android.launcher3
+
+
+
+
     
+GNU nano 8.4                                                         start-print.sh
+#!/data/data/com.termux/files/usr/bin/bash
+
+echo " _~T  Iniciando servidor Node.js..."
+
+su <<'EOF'
+export PATH=/data/data/com.termux/files/usr/bin:$PATH
+cd /data/data/com.termux/files/home/Imprimir
+nohup node server.js &
+chmod 666 /dev/usb/lp0
+exit
+EOF
+
+echo " \~E Servidor iniciado correctamente"
